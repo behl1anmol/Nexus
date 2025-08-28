@@ -58,26 +58,61 @@ Nexus/
 The following diagram illustrates how Nexus handles MCP requests and routes them through the appropriate platform-specific implementations:
 
 ```mermaid
-sequenceDiagram
-    participant LLM
-    participant Host
-    participant Application
-    participant Core
-    participant Infrastructure.Windows
-    participant Infrastructure.Linux
-
-    LLM->>Host: MCP request (take_screenshot)
-    Host->>Application: Dispatch via Mediator
-    Application->>Core: Call IScreenshotService
-    alt Windows
-        Core->>Infrastructure.Windows: Capture screenshot
-    else Linux
-        Core->>Infrastructure.Linux: Capture screenshot
+flowchart TB
+    subgraph Host["Host Layer (Console / Desktop App / MCP Server)"]
+        UI["Command Line / Desktop UI / MCP Protocol"]
+        HostService["Tool Request Handler"]
     end
-    Infrastructure.Windows-->>Application: Result
-    Infrastructure.Linux-->>Application: Result
-    Application-->>Host: Success/Error (Result pattern)
-    Host-->>LLM: MCP response
+
+    subgraph Core["Core Layer (Business Logic)"]
+        ToolContracts["Tool Contracts (ITool, IRequest, IResult)"]
+        ToolServices["Tool Orchestrator (Executes Tools)"]
+        SharedKernel["Shared Utilities (Result Pattern, Validation, Common Types)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer (Platform-specific)"]
+        subgraph Win["Infrastructure.Windows"]
+            WinClick["Click Service (WinAPI)"]
+            WinType["Type Service (SendKeys, UIAutomation)"]
+            WinClipboard["Clipboard Service"]
+            WinScroll["Scroll Service"]
+            WinDrag["Drag Service"]
+            WinMove["Move Service"]
+            WinShortcut["Shortcut Service"]
+            WinKey["Key Service"]
+            WinWait["Wait Service"]
+            WinState["State Service (App Snapshot + Screenshot)"]
+            WinResize["Resize Service"]
+            WinLaunch["Launch Service (Start Menu/Process)"]
+            WinShell["Shell Service (PowerShell)"]
+            WinScrape["Scrape Service (Web/WinForms/WPF UI Automation)"]
+        end
+
+        subgraph Linux["Infrastructure.Linux (Future)"]
+            LinuxClick["Click Service (X11/Wayland)"]
+            LinuxType["Type Service (xdotool, xclip)"]
+            LinuxClipboard["Clipboard Service"]
+            LinuxScroll["Scroll Service"]
+            LinuxDrag["Drag Service"]
+            LinuxMove["Move Service"]
+            LinuxShortcut["Shortcut Service"]
+            LinuxKey["Key Service"]
+            LinuxWait["Wait Service"]
+            LinuxState["State Service (Desktop Snapshot + Screenshot)"]
+            LinuxResize["Resize Service"]
+            LinuxLaunch["Launch Service (xdg-open/systemd)"]
+            LinuxShell["Shell Service (Bash/Terminal)"]
+            LinuxScrape["Scrape Service (Browser Automation / Linux UI Tools)"]
+        end
+    end
+
+    UI --> HostService
+    HostService --> ToolContracts
+    ToolContracts --> ToolServices
+    ToolServices -->|Selects Platform| Infrastructure
+    Infrastructure --> ToolServices
+    ToolServices --> HostService
+    HostService --> UI
 ```
 
 ---
