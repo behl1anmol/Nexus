@@ -59,60 +59,45 @@ The following diagram illustrates how Nexus handles MCP requests and routes them
 
 ```mermaid
 flowchart TB
-    subgraph Host["Host Layer (Console / Desktop App / MCP Server)"]
-        UI["Command Line / Desktop UI / MCP Protocol"]
-        HostService["Tool Request Handler"]
-    end
+  %% External client
+  AI["🤖 LLM / GitHub Copilot"]
 
-    subgraph Core["Core Layer (Business Logic)"]
-        ToolContracts["Tool Contracts (ITool, IRequest, IResult)"]
-        ToolServices["Tool Orchestrator (Executes Tools)"]
-        SharedKernel["Shared Utilities (Result Pattern, Validation, Common Types)"]
-    end
+  %% Host Project
+  subgraph HostProject["📦 Host Project"]
+    Host["Nexus.Host\nMCP Server / Tool Handler"]
+  end
 
-    subgraph Infrastructure["Infrastructure Layer (Platform-specific)"]
-        subgraph Win["Infrastructure.Windows"]
-            WinClick["Click Service (WinAPI)"]
-            WinType["Type Service (SendKeys, UIAutomation)"]
-            WinClipboard["Clipboard Service"]
-            WinScroll["Scroll Service"]
-            WinDrag["Drag Service"]
-            WinMove["Move Service"]
-            WinShortcut["Shortcut Service"]
-            WinKey["Key Service"]
-            WinWait["Wait Service"]
-            WinState["State Service (App Snapshot + Screenshot)"]
-            WinResize["Resize Service"]
-            WinLaunch["Launch Service (Start Menu/Process)"]
-            WinShell["Shell Service (PowerShell)"]
-            WinScrape["Scrape Service (Web/WinForms/WPF UI Automation)"]
-        end
+  %% Core Project
+  subgraph CoreProject["🧠 Core Project"]
+    Core["Nexus.Core\nBusiness Logic & Orchestration"]
+  end
 
-        subgraph Linux["Infrastructure.Linux (Future)"]
-            LinuxClick["Click Service (X11/Wayland)"]
-            LinuxType["Type Service (xdotool, xclip)"]
-            LinuxClipboard["Clipboard Service"]
-            LinuxScroll["Scroll Service"]
-            LinuxDrag["Drag Service"]
-            LinuxMove["Move Service"]
-            LinuxShortcut["Shortcut Service"]
-            LinuxKey["Key Service"]
-            LinuxWait["Wait Service"]
-            LinuxState["State Service (Desktop Snapshot + Screenshot)"]
-            LinuxResize["Resize Service"]
-            LinuxLaunch["Launch Service (xdg-open/systemd)"]
-            LinuxShell["Shell Service (Bash/Terminal)"]
-            LinuxScrape["Scrape Service (Browser Automation / Linux UI Tools)"]
-        end
-    end
+  %% Shared Project
+  subgraph SharedProject["🧰 Shared Project"]
+    Shared["Nexus.Shared\nContracts • DTOs • Utilities"]
+  end
 
-    UI --> HostService
-    HostService --> ToolContracts
-    ToolContracts --> ToolServices
-    ToolServices -->|Selects Platform| Infrastructure
-    Infrastructure --> ToolServices
-    ToolServices --> HostService
-    HostService --> UI
+  %% Infrastructure Projects
+  subgraph InfraProject["🖧 Infrastructure Projects"]
+    InfraWin["🪟 Infrastructure.Windows\nPlatform Services"]
+    InfraLinux["🐧 Infrastructure.Linux\nPlatform Services (future)"]
+  end
+
+  %% Primary flow
+  AI -- "MCP" --> Host
+  Host -- "invokes tools" --> Core
+  Core -- "uses" --> Shared
+  Host -- "uses" --> Shared
+
+  %% DI & implementations (dashed)
+  Host -.-> InfraWin
+  Host -.-> InfraLinux
+  InfraWin -.-> Shared
+  InfraLinux -.-> Shared
+
+  %% Responses
+  Core -- "results" --> Host
+  Host -- "responses" --> AI
 ```
 
 ---
